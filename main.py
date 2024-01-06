@@ -7,7 +7,6 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello_world():
-    db.test_db()
     return "<p> Vamos los pibes</p>"
 
 @app.post("/users")
@@ -18,14 +17,32 @@ def check_user():
     else:
         return 'Generic Error'
 
+@app.get("/ocupants/<ocu_id>")
+def get_ocu(ocu_id :str):
+    doc = db.get_ocupant_document(ocu_id)
+    print("yenderson")
+    return doc
+
+@app.post("/ocupants")
+def post_ocu():
+    body = request.get_data(True, True, False)
+    result = db.create_ocupant_document(body, "centurion")
+    return "Ok"
+
+
+@app.get("/cells") 
+def get_cells():
+    dicct = db.get_all_cell_ocupants()
+    return dicct
+
 @app.get("/cell/<cell_id>")
-def get_cell(cell_id : str):
-    cell = look_for_cell(cell_id)
+def get_cell_ocupants(cell_id : str):
+    cell = look_for_cell_ocupants(cell_id)
     if  cell == None:
         return 'Generic Error'
     else:
         return cell
-    
+
 @app.post("/cell/<cell_id>")
 def post_to_cell(cell_id:str):
     body = request.get_data(True, True, False)
@@ -35,7 +52,8 @@ def post_to_cell(cell_id:str):
 @app.post("/cell/<cell_id>/remove")
 def remove_from_cell(cell_id : str):
     body = request.get_data(True, True, False)
-    return result
+    res = delete_from_cell(cell_id, body)
+    return res 
 
 # AUXs----------------------------------------------
 def look_for_user(username : str) -> bool:
@@ -48,35 +66,27 @@ def look_for_user(username : str) -> bool:
         else:
             return False
         
-def look_for_cell(cell_id):
-    json_dir : str = "./data/cells.json"
-    
-    with open(json_dir) as f:
-        data = json.load(f)
-        if cell_id in data:
-            return data[cell_id]
+def look_for_cell_ocupants(cell_id):
+        if db.check_cell_existance(cell_id):
+            return db.view_cell_ocupant(cell_id)
         else:
-            return None
+            db.create_cell_document(cell_id)
+            return db.view_cell_ocupant(cell_id)
         
 def write_in_cell(cell_id, data_to_write):
-    try:
-        json_dir : str = "./data/cells.json"
-    
-        with open(json_dir, 'r') as f:
-            data = json.load(f)
-            if cell_id in data:
-                modif = data
-                modif[cell_id].append(data_to_write)
-                newJson = json.dumps(modif, ensure_ascii=False)
-            else:
-                json.dumps([data_to_write], f ,ensure_ascii=False)
-
-        with open(json_dir, 'w') as f:
-            f.write(newJson)
-
+        if db.check_cell_existance(cell_id):
+           db.add_ocupant_to_cell_doc(cell_id, data_to_write)
+        else:
+            db.create_cell_document(cell_id)
+            db.add_ocupant_to_cell_doc(cell_id, data_to_write)
         return 'Ok'
-    except Exception as exp:
-        return f'Generic Error {exp}'
+
+def delete_from_cell(cell_id : str, data_to_delete : str):
+        if db.check_cell_existance(cell_id):
+           db.delete_ocupant_from_cell_doc(cell_id, data_to_delete)
+           return 'Ok'
+        else:
+            return 'Cell doesnt exist'
         
 def write_to_txt(entering_chat: str):
     txt_dir : str = "./data/chat.txt"
