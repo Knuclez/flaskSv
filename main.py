@@ -20,7 +20,6 @@ def check_user():
 @app.get("/ocupants/<ocu_id>")
 def get_ocu(ocu_id :str):
     doc = db.get_ocupant_document(ocu_id)
-    print("yenderson")
     return doc
 
 @app.post("/ocupants")
@@ -55,6 +54,17 @@ def remove_from_cell(cell_id : str):
     res = delete_from_cell(cell_id, body)
     return res 
 
+@app.post("/actions")
+def notice_action():
+    body = request.get_json()
+    db.create_action_doc(body)
+    return "Ok"
+
+@app.get("/actions/<turn>")
+def procces(turn: str):
+    process_turn_actions(turn)
+    return "Ok"
+
 # AUXs----------------------------------------------
 def look_for_user(username : str) -> bool:
     json_dir : str = "./data/users.json"
@@ -88,6 +98,19 @@ def delete_from_cell(cell_id : str, data_to_delete : str):
         else:
             return 'Cell doesnt exist'
         
+def process_turn_actions(turn: str):
+    actions = db.get_turn_actions(turn)
+    for action in actions:
+        execute_movement(action)
+    #hay q pasar el turno de alguna forma?
+
+def execute_movement(action):
+    depart_origin = action['origin']
+    destiny = action['destiny']
+    actor_ocupant = action['ocupant']
+    delete_from_cell(depart_origin, actor_ocupant)
+    write_in_cell(destiny, actor_ocupant)
+    
 def write_to_txt(entering_chat: str):
     txt_dir : str = "./data/chat.txt"
     with open(txt_dir, "a") as f:

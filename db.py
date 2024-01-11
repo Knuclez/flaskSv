@@ -43,6 +43,7 @@ def get_ocupant_document(id : str):
     db = client['brutal']
     ocu_collect = db['ocupants']
     doc = ocu_collect.find_one({'_id':id})
+    client.close()
     return doc
     
 def get_all_cell_ocupants():
@@ -82,6 +83,22 @@ def delete_ocupant_from_cell_doc(cell : str, ocupant: str ):
         cells.delete_one({'position':cell})
     client.close()
 
+
+def create_action_doc(action:dict):
+    client = MongoClient(CONN_STRING)
+    db = client['brutal']
+    actions = db['actions']
+    status = actions.insert_one(action)
+    client.close()
+    print(status.acknowledged)
+
+def get_turn_actions(turn: str):
+    client = MongoClient(CONN_STRING)
+    db = client['brutal']
+    actions_coll = db['actions']
+    turn_actions = actions_coll.find({'turn':turn})
+    list_format = list(turn_actions)
+    return list_format 
 
 #NOT FOR USE
 def create_db():
