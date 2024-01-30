@@ -1,1 +1,3 @@
-{"users" : ["marianeitor","pableister","manin"]}
+{"marianeitor": {"_id": 0, "username" : "marianeitor"},
+"pableister": {"_id": 1, "username" : "pableister"},
+"manin": {"_id": 2, "username" : "manin"}}

@@ -12,10 +12,19 @@ def hello_world():
 @app.post("/users")
 def check_user():
     texto = request.get_data(True, True, False)
-    if look_for_user(texto):
-        return texto
-    else:
-        return 'Generic Error'
+
+    return look_for_user(texto)
+
+@app.get("/turn")
+def get_turn():
+    return str(read_turn())
+
+@app.get("/passturn")
+def post_turn():
+    actual_turn = read_turn()
+    process_turn_actions(actual_turn)
+    update_turn(actual_turn + 1)
+    return str(read_turn())
 
 @app.get("/ocupants/<ocu_id>")
 def get_ocu(ocu_id :str):
@@ -24,8 +33,12 @@ def get_ocu(ocu_id :str):
 
 @app.post("/ocupants")
 def post_ocu():
-    body = request.get_data(True, True, False)
-    result = db.create_ocupant_document(body, "centurion")
+    body = request.get_json()
+    model = get_ocupant_model(body['model_id'])
+    _id = str(db.count_ocupants())
+
+    db.create_ocupant_document(_id, model, body['owner_id'])
+    write_in_cell(body['cell_id'], _id)
     return "Ok"
 
 
@@ -57,12 +70,8 @@ def remove_from_cell(cell_id : str):
 @app.post("/actions")
 def notice_action():
     body = request.get_json()
+    body['turn'] = read_turn()
     db.create_action_doc(body)
-    return "Ok"
-
-@app.get("/actions/<turn>")
-def procces(turn: str):
-    process_turn_actions(turn)
     return "Ok"
 
 # AUXs----------------------------------------------
@@ -71,11 +80,21 @@ def look_for_user(username : str) -> bool:
     
     with open(json_dir) as f:
         data = json.load(f)
-        if username in data['users']:
-            return True
+        if username in data:
+            return data[username]
         else:
-            return False
-        
+            return "no-user"
+    
+def get_ocupant_model(model_id):
+    json_dir : str = "./data/ocupant_models.json"
+
+    with open(json_dir) as f:
+        data = json.load(f)
+        if model_id in data:
+            return data[model_id]
+        else:
+            return data["0"]
+
 def look_for_cell_ocupants(cell_id):
         if db.check_cell_existance(cell_id):
             return db.view_cell_ocupant(cell_id)
@@ -98,8 +117,10 @@ def delete_from_cell(cell_id : str, data_to_delete : str):
         else:
             return 'Cell doesnt exist'
         
-def process_turn_actions(turn: str):
+def process_turn_actions(turn: int):
+    db.delete_old_empty_cells()
     actions = db.get_turn_actions(turn)
+    print(actions)
     for action in actions:
         execute_movement(action)
     #hay q pasar el turno de alguna forma?
@@ -116,6 +137,19 @@ def write_to_txt(entering_chat: str):
     with open(txt_dir, "a") as f:
         f.write(entering_chat + "\n")
         f.close()
+
+def read_turn() -> int:
+    txt_dir : str = "./data/turn.txt"
+    with open(txt_dir, "r") as f:
+        turno : str = f.read()
+        f.close()
+    return int(turno)
+
+def update_turn(new_turn : int):
+   txt_dir : str = "./data/turn.txt" 
+   with open(txt_dir, "w") as f:
+       f.write(str(new_turn))
+       f.close()
 
 # LAUNCH-------------------------------------------
 if __name__ == '__main__':

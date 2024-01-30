@@ -1,0 +1,6 @@
+{
+    "0":{"type": "prophet", "flags":[1,0], "damage": 10, "hp": 100},
+    "1":{"type": "centurion", "flags":[1,0], "damage": 4, "hp": 10},
+    "2":{"type": "kuribo", "flags":[1,0], "damage": 2, "hp": 5},
+    "3":{"type": "village", "flags":[0,1], "damage": 10, "hp": 100}
+}

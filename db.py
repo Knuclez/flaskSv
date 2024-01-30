@@ -28,13 +28,23 @@ def create_cell_document(cell : str):
     })
     client.close()
 
-def create_ocupant_document(ocupant_id : str, ocupant_type: str):
+def delete_old_empty_cells():
+    client = MongoClient(CONN_STRING)
+    db = client['brutal']
+    cells = db['cells']
+    cells.delete_many({'ocupants':[]})
+    client.close()
+
+def create_ocupant_document(ocupant_id : str, ocupant_model, owner_id):
     client = MongoClient(CONN_STRING)
     db = client['brutal']
     ocupants_collect = db['ocupants']
     ocupants_collect.insert_one({
         '_id' : ocupant_id,
-        'type' : ocupant_type
+        'type' : ocupant_model['type'],
+        'flags':ocupant_model['flags'],
+        'status' : 'active',
+        'owner_id':owner_id,
     }) 
     client.close()
 
@@ -45,7 +55,15 @@ def get_ocupant_document(id : str):
     doc = ocu_collect.find_one({'_id':id})
     client.close()
     return doc
-    
+
+def count_ocupants():
+    client = MongoClient(CONN_STRING)
+    db = client['brutal']
+    ocu_collect = db['ocupants']
+    cuenta = ocu_collect.count_documents({})
+    client.close()
+    return cuenta
+
 def get_all_cell_ocupants():
     result = {}
     client = MongoClient(CONN_STRING)
@@ -78,9 +96,6 @@ def delete_ocupant_from_cell_doc(cell : str, ocupant: str ):
     db = client['brutal']
     cells = db['cells']
     cells.update_one({'position':cell}, {'$pull' : {'ocupants' : ocupant}})
-    doc = cells.find_one({'position':cell})
-    if len(doc['ocupants']) <= 0:
-        cells.delete_one({'position':cell})
     client.close()
 
 
@@ -92,7 +107,7 @@ def create_action_doc(action:dict):
     client.close()
     print(status.acknowledged)
 
-def get_turn_actions(turn: str):
+def get_turn_actions(turn: int):
     client = MongoClient(CONN_STRING)
     db = client['brutal']
     actions_coll = db['actions']
